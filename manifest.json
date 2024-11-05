@@ -1,0 +1,19 @@
+{
+
+  "description": "Removes content on pinterest Labeled as AI",
+  "manifest_version": 2,
+  "name": "Pinterest Anti AI",
+  "version": "1.0",
+  "homepage_url": "https://github.com/Ethaisa123/Pinterest-anit-AI",
+  "icons": {
+    "48": "icons/border-48.png"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["*://*.mozilla.org/*"],
+      "js": ["pinterestAntiAi.js"]
+    }
+  ]
+
+}
