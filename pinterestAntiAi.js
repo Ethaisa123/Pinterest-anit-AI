@@ -1,74 +1,100 @@
-cururl = window.location.href
-if (cururl.includes("pinterest.com/pin")){console.log("pinterest page found!")} else {throw new Error();}
+let previousUrl = '';
+let isRunning = false; // Flag to prevent multiple executions
 
-//sets the description, image and hashtags codes (codes used to get elements)
-descriptionCode = "X8m zDA IZT tBJ dyH iFc sAJ swG"
-hashtagsCode = "X8m Oii IZT CKL tBJ dyH iFc sAJ swG"
-commentCode = '.X8m.zDA.tBJ.dyH.iFc.sAJ.swG'
-// goes to the first images div tag and gets the first images element
-mainImageCode = document.getElementsByClassName('MIw QLY Rym ojN p6V sLG zI7 iyn Hsu')[0];
-if (mainImageCode) {mainImgElement = mainImageCode.querySelectorAll('img');} else {console.log('Main Image not found.');}
+// Function to check for AI content
+function checkForAI() {
+    if (isRunning) return; // Prevent re-entry if already running
+    isRunning = true; // Set the flag to prevent further executions
 
+    // A short delay to allow all elements to load
+    setTimeout(() => {
+        
+        // Set Variables
+        let IsAi = false;
+        const bannedWords = ['Midjourney', 'aidrawing', 'AI', "Ai", 'Artificial intelligence', 'Machine learning', 'ai', 'nijijourney', 'aiart', 'stablediffustion', 'aidrawing', 'aiartanime', 'midjourneyart', 'aiイラスト', 'aiillustration'];
 
-//URL of AI image replacement
-aiImageUrl = "https://i.natgeofe.com/n/548467d8-c5f1-4551-9f58-6817a8d2c45e/NationalGeographic_2572187_square.jpg";
+        
+        
+        // Select all elements with the class "text-container" that could contain ai
+        const textContainerElements = document.querySelectorAll('.text-container');
+        const headingElements = document.querySelectorAll('h1, h4, h5, h6');
+        const descriptionElements = document.querySelectorAll('[data-test-id="truncated-description"]');
 
-//innocent until proven Guilty!
-IsAi = false
-bannedWords = ['Midjourney','aidrawing' ,'AI', 'Artificial intelligence', 'Machine learning', 'ai', 'nijijourney', 'aiart', 'stablediffustion', 'aidrawing', 'aiartanime', 'midjourneyart', 'aiイラスト', 'aiillustration'];
+        // Combine all NodeLists into a single array
+        const allElements = [
+            ...textContainerElements,
+            ...headingElements,
+            ...descriptionElements
+        ];
 
-
-//Function that compares text against bannedWords
-function contains(target, pattern){
-    // value is what is returned (starts as false)
-    var value = false;
-    // checks through the banned words list and if a banned word is in the string then sets the returned string to true (AI is detected)
-    for (var i = 0; i < pattern.length; i++)
-    {if (target.includes(pattern[i])) {value = true;}}
-    //returns wether AI is detected
-    return (value)
-  }
-
-
-//Description code
-descriptionElement = document.getElementsByClassName(descriptionCode)[0];
-if (descriptionElement) {
-description = descriptionElement.textContent;
-console.log("descritption contains AI tags : " + contains(description, bannedWords))
-
-} else {console.log('Description not found')}
-
-//comment code
-commentElements = document.querySelectorAll(commentCode);
-if (commentElements) {
-comments = commentElements.textContent;
-console.log(comments)
-comments = Array.from(commentElements).map(element => element.textContent).join(' ');
-console.log(comments)
-comments = comments.replace(/([A-Z])/g, ' $1').trim()
-console.log("comments contains AI tags : " + contains(comments, bannedWords))
-if (IsAi == false) {IsAi = contains(comments, bannedWords)}
-
-} else {console.log('Commments not found')}
-
-//hashtag code
-hashtagElement = document.getElementsByClassName(hashtagsCode)[0];
-if (hashtagElement) {
-hashtags = hashtagElement.textContent;
-hashtags = hashtags.replace(/([A-Z])/g, ' $1').trim()
-hashtags = hashtags.replace(/#/g, ' ');
-console.log("hashtags contains AI tags : " + contains(hashtags, bannedWords))
-
-} else {console.log('hashtags not found')}
-
-
-
-
-
-//if the test comes back true set ISAI to true (means that AI is detected)
-
-console.log("Is AI detected : " + IsAi)
-if (IsAi == true) {
-    mainImgElement[0].src = aiImageUrl
+        
+        // Check if any elements were found
+        if (allElements.length > 0) {
+            console.log('Elements :');
+            allElements.forEach((element) => {
+                const textContent = element.textContent.trim();
+                // Only log elements that contain banned words
+                if (contains(textContent, bannedWords)){
+                    //sets AI to true
+                    IsAi = true
+                    // Only log elements that have non-empty text content
+                    if (textContent.length > 0) {
+                        if (element.hasAttribute('data-test-id') && element.getAttribute('data-test-id') === 'truncated-description') {
+                            const textContentnohash = textContent.replace(/#/g, ' ');
+                            console.log(`Description contains AI | "${textContentnohash}"`);
+                        } else {
+                            if (element.tagName.toLowerCase() == "span") {console.log(`Commnet contains AI | "${element.textContent.trim()}"`);} else{
+                            console.log(`${element.tagName.toLowerCase()} contains AI | "${element.textContent.trim()}"`);}
+                        }
+                    }
+                } // Logs elements without AI >>  else {console.log(`${element.tagName.toLowerCase()} | Does not contain AI.`);}
+            });
+        } 
+        
+        // Check for main image
+        mainImgElement = document.querySelector('[data-test-id="closeup-body-image-container"] img');
+        if (mainImgElement) {
+            if (mainImgElement && IsAi) {
+                console.log("Image replaced with AI image.");
+                AiIsDetected(mainImgElement)
+            } else {
+                console.log("AI not detected.");
+            }
+        } else {
+            console.log("Main image element not found.");
+        }
+        
+        isRunning = false; // Reset the flag after processing
+    }, 2500); // Adjust the delay as needed (300 ms here)
 }
 
+// Function to handle URL changes
+const handleUrlChange = () => {
+    const currentUrl = window.location.href;
+    if (currentUrl !== previousUrl) {
+        console.log(`URL data changed to ${currentUrl}`);
+        previousUrl = currentUrl;
+
+        // Wait for the DOM to be fully loaded
+        checkForAI(); // Call the function directly to check after delay
+    }
+};
+
+// Use MutationObserver to detect URL changes
+const observer = new MutationObserver(handleUrlChange);
+observer.observe(document.body, {
+    childList: true,
+    subtree: true
+});
+
+function AiIsDetected(MainImage) {
+    MainImage.src = "https://i.natgeofe.com/n/548467d8-c5f1-4551-9f58-6817a8d2c45e/NationalGeographic_2572187_square.jpg"; // Replace image if AI is detected
+}
+
+// function that checks if a word is in a string
+function contains(target, pattern) {
+    return pattern.some(word => target.includes(word));
+}
+
+// Initial call in case the script is loaded on an existing Pinterest pin
+handleUrlChange();
